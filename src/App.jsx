@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, 
   MapPin, 
@@ -15,36 +15,44 @@ import {
   Plus,
   ChevronDown,
   ArrowRight,
-  Coffee, // 新增圖標：咖啡 (適合樂齡)
-  Landmark, // 新增圖標：地標/博物館
-  Bed // 新增圖標：住宿
+  Coffee, 
+  Bed,
+  Sunrise, 
+  Sunset,  
+  Moon,
+  Music, 
+  Wine
 } from 'lucide-react';
 
 // ==========================================
-//   資料庫區域
+//   資料庫區域 (行程已修正為正確格式)
 // ==========================================
 
-// --- 青少年遊學資料 ---
+// --- 青少年遊學資料 (Classic Courses 2025/2026) ---
 const TEEN_CAMPUSES = [
-  // --- UK CENTRES ---
   {
     id: 'uk-bosworth', 
     name: "NORTHAMPTON 北安普頓 (Bosworth Independent School)",
     country: "UK",
     type: "STEM & Academic",
     location: "英國, 北安普頓 (Bosworth Independent School)",
-    description: "【桑妮推薦：王子學校的美譽】位於英國心臟地帶的百年菁英學府。這裡完美結合了繁忙的城市生活與寧靜的鄉村風光。校園正對 118 英畝的廣闊綠地（The Racecourse），擁有頂級的教學設施與舒適的單人/雙人套房。除了高品質的英語課程，這裡更是 STEM（科學/技術）與藝術課程的搖籃，非常適合初次遊學、尋求安全感與學術啟發的孩子。",
+    description: "【桑妮推薦：王子學校的美譽】位於英國心臟地帶的百年菁英學府。校園正對 118 英畝的廣闊綠地，擁有頂級的教學設施與舒適的單人/雙人套房。除了高品質的英語課程，這裡更是 STEM（科學/技術）與藝術課程的搖籃。",
     features: ["桑妮推薦", "118英畝綠地校園", "獨立衛浴套房", "STEM 科學實驗"],
-    pricePerWeek: 1060, // 2026 Gross
+    pricePerWeek: 1060, 
     currency: "£",
     startDate: "2026-06-28",
     endDate: "2026-08-16",
     age: "11-17",
-    // 替換圖片：英國傳統紅磚建築/校園風格
     image: "https://images.unsplash.com/photo-1565034946487-077786996e27?auto=format&fit=crop&w=800&q=80",
+    // 資料來源：northampton_classic_course_2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【英式生活初體驗】抵達與歡迎晚宴 / 華威城堡 (Warwick Castle) 探索 / 科學實驗工作坊 / 英式下午茶禮儀 / 劍橋大學城全日遊" },
-      { day: "Week 2", activity: "【文化與學術巡禮】牛津大學城導覽 / 藝術創作 (T-shirt 彩繪) / 倫敦大笨鐘與白金漢宮 / 惜別舞會與證書頒發" }
+      { day: "週日 (Sunday)", morning: "抵達校園 / 辦理入住", afternoon: "校園導覽與迎新介紹", evening: "破冰活動與歡迎晚會" },
+      { day: "週一 (Monday)", morning: "英語分級測驗 & 第一堂課", afternoon: "北安普頓市區徒步導覽", evening: "歡迎迪斯可 (Welcome Disco) 或 戲劇遊戲" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】華威城堡 (Warwick Castle)", evening: "誰想成為百萬富翁？益智問答之夜" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】牛津大學城徒步導覽", evening: "國際之夜 (International Night)" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "賭場之夜 或 英語會話俱樂部", evening: "奪旗大賽 (Capture the Flag)" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "擊鼓/魔術/舞蹈工作坊", evening: "海灘派對主題迪斯可" },
+      { day: "週六 (Saturday)", morning: "【全日遊】倫敦市區觀光", afternoon: "倫敦徒步導覽與購物", evening: "電影之夜與爆米花" }
     ],
     transferOptions: [
       { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 560 },
@@ -58,18 +66,23 @@ const TEEN_CAMPUSES = [
     country: "UK",
     type: "History & Culture",
     location: "英國, 坎特伯雷 (Stafford House / Worthgate School)",
-    description: "【桑妮推薦：親子與文學之旅】這是一座充滿故事的世界遺產城市，也是英國最古老、最安全的城市之一。課程位於 Stafford House 校區，讓學生沉浸在中古世紀的童話氛圍中。行程包含參訪著名的坎特伯雷大教堂、乘船漫遊護城河。因距離倫敦僅 50 分鐘車程，既能享受古城的寧靜，又能輕鬆造訪大都會。",
+    description: "【桑妮推薦：親子與文學之旅】這是一座充滿故事的世界遺產城市。課程位於 Stafford House 校區，讓學生沉浸在中古世紀的童話氛圍中。行程包含參訪著名的坎特伯雷大教堂、乘船漫遊護城河。",
     features: ["世界遺產大教堂", "倫敦近郊安全首選", "里茲城堡參訪", "濱海小鎮之旅"],
-    pricePerWeek: 1385, // 2026 Gross
+    pricePerWeek: 1385,
     currency: "£",
-    startDate: "2026-06-14”,
-    endDate: "2026-08-30”,
+    startDate: "2026-06-14",
+    endDate: "2026-08-30",
     age: "11-18",
-    //替換圖片：英國古城/街道風格
     image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=800&q=80", 
+    // 資料來源：canterbury_classic_course_2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【古城與海岸】坎特伯雷大教堂導覽 / 肯特郡鄉村漫步 / 濱海小鎮 Whitstable 吃生蠔 / 倫敦泰晤士河遊船" },
-      { day: "Week 2", activity: "【城堡與歷史】「城堡中的皇后」里茲城堡 (Leeds Castle) / 多佛白堊斷崖健行 / 傳統英式烘焙課 / 盛大惜別晚會" }
+      { day: "週日 (Sunday)", morning: "抵達校園 / 辦理入住", afternoon: "校園環境介紹", evening: "迎新晚會與破冰遊戲" },
+      { day: "週一 (Monday)", morning: "分級測驗 & 英語課程", afternoon: "坎特伯雷城市徒步導覽", evening: "歡迎迪斯可 或 戲劇工作坊" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】里茲城堡 (Leeds Castle)", evening: "益智問答之夜" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "參訪坎特伯雷大教堂 (Canterbury Cathedral)", evening: "國際之夜" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "聖奧古斯丁修道院遺址", evening: "賭場之夜 或 英語會話社團" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "運動競賽 / 網球 / 足球", evening: "海灘主題派對" },
+      { day: "週六 (Saturday)", morning: "【全日遊】倫敦、布萊頓或劍橋", afternoon: "城市觀光與自由時間", evening: "電影之夜與桌遊" }
     ],
     transferOptions: [
       { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 580 },
@@ -83,18 +96,23 @@ const TEEN_CAMPUSES = [
     country: "UK",
     type: "Classic Boarding",
     location: "英國, 奧克漢 (Oakham School)",
-    description: "【英式貴族寄宿體驗】Oakham School 創立於 1584 年，是一所歷史悠久的頂尖寄宿學校。校園建築優美，宛如哈利波特電影場景。這裡擁有極佳的體育設施（游泳池、球場），非常適合熱愛運動的學生。位置鄰近 Rutland Water 自然保護區，環境優美安全。",
+    description: "【英式貴族寄宿體驗】Oakham School 創立於 1584 年，是一所歷史悠久的頂尖寄宿學校。校園建築優美，擁有極佳的體育設施（游泳池、球場）。位置鄰近 Rutland Water 自然保護區，環境優美安全。",
     features: ["傳統貴族寄宿學校", "哈利波特風格建築", "豐富體育設施", "歷史名城導覽"],
-    pricePerWeek: 1420, // 2026 Gross
+    pricePerWeek: 1420,
     currency: "£",
-    startDate: "2026-07-05”,
-    endDate: "2026-08-09,
+    startDate: "2026-07-05",
+    endDate: "2026-08-09",
     age: "10-17",
-    // 替換圖片：英式貴族/綠地校園風格
     image: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+    // 資料來源：oakham_classic_course_2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【英式傳統】校園導覽與迎新 / 奧克漢小鎮尋寶 / 諾丁漢 (Nottingham) 羅賓漢之旅 / 倫敦全日觀光" },
-      { day: "Week 2", activity: "【運動與探索】劍橋大學城撐篙 / 校園迷你奧運會 / 藝術工作坊 / 惜別化妝舞會" }
+      { day: "週日 (Sunday)", morning: "抵達校園", afternoon: "校園導覽", evening: "破冰活動" },
+      { day: "週一 (Monday)", morning: "分級測驗 & 英語課程", afternoon: "奧克漢小鎮徒步導覽", evening: "歡迎迪斯可 或 珠寶製作" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】史丹佛 (Stamford) 導覽", evening: "百萬富翁問答之夜" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "足球 / 網球 / 擊鼓工作坊", evening: "國際之夜" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】拉特蘭湖 (Rutland Water) 造筏體驗", evening: "賭場之夜" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "迷你奧運會 / 戲劇工作坊", evening: "海灘主題派對" },
+      { day: "週六 (Saturday)", morning: "【全日遊】倫敦徒步導覽", afternoon: "倫敦眼與泰晤士河周邊", evening: "電影之夜" }
     ],
     transferOptions: [
       { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 830 },
@@ -108,18 +126,23 @@ const TEEN_CAMPUSES = [
     country: "UK",
     type: "Classic Course",
     location: "英國, 劍橋 (CATS Cambridge)",
-    description: "【學術之都】課程位於現代化的 CATS Cambridge 校區，擁有先進的教學設施。這裡是你體驗英國學術傳統的最佳地點。除了英語課程，我們將帶你深入劍橋大學城，參訪宏偉的國王學院 (King's College)，並體驗傳統的康河撐篙 (Punting)。",
+    description: "【學術之都】課程位於現代化的 CATS Cambridge 校區。這裡是你體驗英國學術傳統的最佳地點。除了英語課程，我們將帶你深入劍橋大學城，參訪宏偉的國王學院 (King's College)，並體驗傳統的康河撐篙。",
     features: ["參訪國王學院", "康河撐篙體驗", "現代化校園設施", "倫敦一日遊"],
-    pricePerWeek: 2050, // 2026 Gross
+    pricePerWeek: 2050,
     currency: "£",
-    startDate: "2026-06-28”,
-    endDate: "2026-08-16”,
+    startDate: "2026-06-28",
+    endDate: "2026-08-16",
     age: "12-17",
-    // 替換圖片：劍橋國王學院/康河 (更新連結)
-    image: "https://images.unsplash.com/photo-1565529712759-42b78bed03c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+    image: "https://images.unsplash.com/photo-1565529712759-42b78bed03c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+    // 資料來源：cambridge_classic_course_2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【學術氛圍】英語分級測驗 / 康河撐篙 (Punting) / 劍橋市集廣場購物 / 倫敦一日遊 (大英博物館)" },
-      { day: "Week 2", activity: "【歷史足跡】國王學院禮拜堂參訪 / 伊利大教堂 (Ely Cathedral) / 華威城堡 / 傳統英式運動日" }
+      { day: "週日 (Sunday)", morning: "抵達與入住", afternoon: "校園導覽", evening: "迎新破冰活動" },
+      { day: "週一 (Monday)", morning: "分級測驗", afternoon: "劍橋康河撐篙 (Punting) & 城市導覽", evening: "歡迎迪斯可" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "足球 / 網球 / 擊鼓工作坊", evening: "益智問答之夜" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】伊利大教堂 (Ely Cathedral)", evening: "國際之夜" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "排球 / 羽球 / 珠寶製作", evening: "賭場之夜" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "迷你奧運會 / 馬戲團技巧工作坊", evening: "海灘主題派對" },
+      { day: "週六 (Saturday)", morning: "【全日遊】倫敦觀光與泰晤士河遊船", afternoon: "倫敦自由購物", evening: "電影之夜" }
     ],
     transferOptions: [
       { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 560 },
@@ -128,123 +151,28 @@ const TEEN_CAMPUSES = [
     ]
   },
   {
-    id: 'uk-london',
-    name: "LONDON 倫敦 (Guildhouse School)",
-    country: "UK",
-    type: "City Experience",
-    location: "英國, 倫敦 (Guildhouse School)",
-    description: "【大都會體驗】位於倫敦市中心 Bloomsbury 區的 Guildhouse School，步行即可抵達大英博物館與牛津街。適合喜愛城市探索與文化的學生。課程結合了倫敦地標巡禮，讓學生親身感受世界級城市的脈動。",
-    features: ["倫敦市中心住宿", "大英博物館為鄰", "西區劇院欣賞", "牛津街購物"],
-    pricePerWeek: 1505, // 2026 Estimated
-    currency: "£",
-    startDate: "2026-06-28",
-    endDate: "2026-08-30”,
-    age: "12-17",
-    // 替換圖片：倫敦街景/大笨鐘
-    image: "https://images.unsplash.com/photo-1486299267070-83823f5448dd?auto=format&fit=crop&w=800&q=80",
-    itinerary: [
-      { day: "Week 1", activity: "【倫敦之心】倫敦眼與大笨鐘 / 柯芬園街頭藝人 / 西區音樂劇 / 布萊頓海濱一日遊" },
-      { day: "Week 2", activity: "【文化與時尚】泰特現代美術館 / 格林威治天文台 / 肯頓市集 / 牛津街與攝政街購物" }
-    ],
-    transferOptions: [
-      { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 350 },
-      { code: "LGW", name: "倫敦蓋威克 (Gatwick)", price: 450 },
-      { code: "STN", name: "倫敦史坦斯特 (Stansted)", price: 450 }
-    ]
-  },
-  {
-    id: 'uk-bournemouth',
-    name: "BOURNEMOUTH 波恩茅斯 (Arts University Bournemouth)",
-    country: "UK",
-    type: "Art & Seaside",
-    location: "英國, 波恩茅斯 (Arts University Bournemouth)",
-    description: "【海濱與藝術】位於英國著名的海濱度假勝地，校園設於波恩茅斯藝術大學 (AUB)。這裡氣候宜人，擁有美麗的沙灘。課程特別適合喜愛創意與藝術的學生，結合了海濱休閒與豐富的藝術氛圍。",
-    features: ["海濱度假勝地", "藝術大學校園", "沙灘活動", "氣候溫暖宜人"],
-    pricePerWeek: 1385, // 2026 Estimated
-    currency: "£",
-    startDate: "2026-07-05",
-    endDate: "2026-08-09”,
-    age: “8-17",
-    // 替換圖片：英式古典建築 (替代原海濱圖片)
-    image: "https://images.unsplash.com/photo-1449452198679-05c7fd30f416?auto=format&fit=crop&w=800&q=80",
-    itinerary: [
-      { day: "Week 1", activity: "【陽光海岸】波恩茅斯海灘日 / 侏羅紀海岸 (Jurassic Coast) / 倫敦一日遊" },
-      { day: "Week 2", activity: "【創意生活】藝術工作坊體驗 / 溫徹斯特古城 / 海洋水族館 / 惜別營火晚會" }
-    ],
-    transferOptions: [
-      { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 540 },
-      { code: "STN", name: "倫敦史坦斯特 (Stansted)", price: 640 },
-      { code: "BHX", name: "伯明罕 (Birmingham)", price: 780 }
-    ]
-  },
-  {
-    id: 'uk-york',
-    name: "YORK 約克 (Queen Ethelburga's)",
-    country: "UK",
-    type: "History & Countryside",
-    location: "英國, 約克 (Queen Ethelburga's)",
-    description: "【哈利波特與歷史】位於著名的 Queen Ethelburga's 寄宿學校，擁有頂級的現代化設施與廣闊的鄉村校園。鄰近歷史名城約克（York），學生可以漫步在「斜角巷」原型的肉舖街，參訪宏偉的約克大教堂，感受濃厚的英式歷史底蘊。",
-    features: ["頂級寄宿學校設施", "約克大教堂", "肉舖街(斜角巷)", "安全鄉村環境"],
-    pricePerWeek: 1460, // 2026 Estimated
-    currency: "£",
-    startDate: "2026-06-28,
-    endDate: "2026-08-02”,
-    age: “8-17",
-    // 替換圖片：約克大教堂/歷史建築 (更新連結)
-    image: "https://images.unsplash.com/photo-1582299710920-d336338d6728?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
-    itinerary: [
-      { day: "Week 1", activity: "【中世紀探險】約克古城牆漫步 / 維京博物館 / 曼徹斯特一日遊" },
-      { day: "Week 2", activity: "【魔法與自然】哈利波特主題遊 / 霍華德城堡 / 傳統英式運動日 / 鬼屋導覽" }
-    ],
-     transferOptions: [
-      { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 910 },
-      { code: "LGW", name: "倫敦蓋威克 (Gatwick)", price: 1030 },
-      { code: "STN", name: "倫敦史坦斯特 (Stansted)", price: 850 }
-    ]
-  },
-
-  // --- USA CENTRES ---
-  {
     id: 'usa-ny-columbia', 
     name: "NEW YORK 紐約 (Columbia University)",
     country: "USA",
     type: "Ivy League & City",
     location: "美國, 紐約 (Columbia University - Barnard College)",
-    description: "【常春藤名校體驗】入住曼哈頓上西區的哥倫比亞大學（巴納德學院）宿舍，體驗真正的常春藤盟校生活！搭乘地鐵即可抵達時代廣場與中央公園。這不僅是英語課程，更是一場紐約大蘋果的深度探索。學生將登上自由女神像、漫步布魯克林大橋。",
+    description: "【常春藤名校體驗】入住曼哈頓上西區的哥倫比亞大學（巴納德學院）宿舍，體驗真正的常春藤盟校生活！搭乘地鐵即可抵達時代廣場與中央公園。",
     features: ["常春藤盟校住宿", "時代廣場與百老匯", "自由女神像", "曼哈頓深度遊"],
-    pricePerWeek: 2840, // 2026 Gross
+    pricePerWeek: 2840,
     currency: "$",
     startDate: "2026-06-29",
-    endDate: "2026-08-15”,
-    age: "14-17”,
-    // 替換圖片：紐約街景/建築
+    endDate: "2026-08-15",
+    age: "14-17",
     image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=800&q=80",
+    // 資料來源：New York Columbia Summer Centre 2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【大蘋果魅力】中央公園野餐 / MoMA 現代藝術博物館 / 時代廣場漫步 / 自由女神像遊船" },
-      { day: "Week 2", activity: "【金融與時尚】華爾街與金融區 / SOHO 區購物 / 布魯克林大橋徒步 / 康尼島海濱遊樂" }
-    ],
-    transferOptions: [
-      { code: "JFK", name: "甘迺迪 (JFK) / 紐華克 (EWR)", price: 750 },
-    ]
-  },
-  {
-    id: 'usa-ny-wagner',
-    name: "NEW YORK 紐約 (Wagner College)",
-    country: "USA",
-    type: "Campus & City",
-    location: "美國, 紐約 (Wagner College, Staten Island)",
-    description: "【校園與城市全景】位於史泰登島的 Wagner College，擁有美麗的綠地校園，並能眺望曼哈頓天際線。搭乘免費的史泰登島渡輪 (Staten Island Ferry) 即可輕鬆前往曼哈頓市中心，享受安全舒適的住宿環境與紐約的便利。",
-    features: ["綠地校園環境", "眺望曼哈頓天際線", "史泰登島渡輪", "安全且便利"],
-    pricePerWeek: 3635, // 2026 Estimated
-    currency: "$",
-    startDate: "2026-06-28,
-    endDate: "2026-08-08”,
-    age: "12-18”,
-    // 替換圖片：紅磚學院風格建築 (符合使用者要求的英國建築風格)
-    image: "https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&w=800&q=80",
-    itinerary: [
-      { day: "Week 1", activity: "【島嶼與城市】史泰登島渡輪體驗 / 華爾街銅牛 / 911 紀念博物館 / 帝國大廈觀景" },
-      { day: "Week 2", activity: "【文化探索】大都會博物館 / 中央公園 / 時代廣場 / 自由女神像" }
+      { day: "週日 (Sunday)", morning: "抵達與入住", afternoon: "校園導覽", evening: "迎新破冰活動" },
+      { day: "週一 (Monday)", morning: "課程介紹與英語課", afternoon: "【半日遊】中央公園 / 林肯中心", evening: "歡迎晚會" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】MoMA 現代藝術博物館", evening: "國際之夜" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】世貿中心遺址 / 華爾街 / 證交所", evening: "才藝表演秀 (Talent Show)" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "校園運動與休閒活動", evening: "迪斯可舞會" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】布魯克林大橋徒步 / 市政廳", evening: "漫步高架公園 (Highline) 至時代廣場" },
+      { day: "週六 (Saturday)", morning: "【全日遊】康尼島 (Coney Island)", afternoon: "海濱遊樂園體驗", evening: "遊戲之夜" }
     ],
     transferOptions: [
       { code: "JFK", name: "甘迺迪 (JFK) / 紐華克 (EWR)", price: 750 },
@@ -258,16 +186,21 @@ const TEEN_CAMPUSES = [
     location: "美國, 波士頓 (CATS Academy)",
     description: "【美國學術心臟】位於 CATS Academy Boston 的優美校園，提供單人衛浴套房。波士頓是美國的學術之都，鄰近哈佛與 MIT。行程包含走訪自由之路 (Freedom Trail)、昆西市場，以及精彩的紐約市一日遊。",
     features: ["單人衛浴套房", "哈利波特餐廳體驗(哈佛)", "紐約市一日遊", "昆西市場龍蝦堡"],
-    pricePerWeek: 2075, // 2026 Gross
+    pricePerWeek: 2075,
     currency: "$",
-    startDate: "2026-06-28,
-    endDate: "2026-08-09”,
+    startDate: "2026-06-28",
+    endDate: "2026-08-09",
     age: "12-17",
-    // 替換圖片：經典建築/學院 (替代原波士頓圖片)
     image: "https://images.unsplash.com/photo-1528695076122-38d0114979e8?auto=format&fit=crop&w=800&q=80",
+    // 資料來源：boston_classic_course_2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【歷史與現代】波士頓自由之路 / 昆西市場美食 / 哈佛大學校園巡禮 / 紐約市全日遊" },
-      { day: "Week 2", activity: "【海洋與學術】波士頓港賞鯨遊船 / MIT 博物館 / 紐伯里街購物 / 六旗遊樂園" }
+      { day: "週日 (Sunday)", morning: "抵達與入住", afternoon: "當地環境介紹", evening: "迎新活動" },
+      { day: "週一 (Monday)", morning: "分級測驗", afternoon: "【半日遊】波恩水族館 (Boston Aquarium)", evening: "歡迎派對" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】Wrentham Outlets 購物", evening: "萬聖節主題派對 (Halloween Party)" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】MIT 麻省理工學院導覽", evening: "運動之夜或桌遊" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "校園藝術與工藝活動 / 美國大學講座", evening: "國際之夜" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】普利茅斯 (Plymouth) 歷史導覽", evening: "電影之夜" },
+      { day: "週六 (Saturday)", morning: "【全日遊】Canobie Lake 遊樂園", afternoon: "體驗美式遊樂設施", evening: "與朋友自由放鬆" }
     ],
     transferOptions: [
       { code: "BOS", name: "波士頓洛根 (Logan)", price: 620 }
@@ -281,87 +214,49 @@ const TEEN_CAMPUSES = [
     location: "美國, 柏克萊 (UC Berkeley)",
     description: "【加州陽光與名校】課程位於世界頂尖公立大學 UC Berkeley 校園內！感受矽谷創新氛圍。行程包括搭乘叮叮車、騎單車橫越金門大橋、參訪神秘的惡魔島 (Alcatraz)，以及前往矽谷科技重鎮朝聖。",
     features: ["入住 UC Berkeley", "金門大橋單車行", "惡魔島探險", "矽谷科技參訪"],
-    pricePerWeek: 2470, // 2026 Gross
+    pricePerWeek: 2470,
     currency: "$",
-    startDate: "2026-06-28”,
-    endDate: "2026-08-09”,
+    startDate: "2026-06-28",
+    endDate: "2026-08-09",
     age: "10-17",
-    // 替換圖片：舊金山
     image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=800&q=80",
+    // 資料來源：san_francisco_classic_course_2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【灣區風情】聯合廣場 / 叮叮車體驗 / 金門大橋公園 / 漁人碼頭 / 惡魔島監獄導覽" },
-      { day: "Week 2", activity: "【科技與自然】矽谷科技公司參訪 / 史丹佛大學 / 聖塔克魯茲海灘 / NBA 勇士隊主場" }
+      { day: "週日 (Sunday)", morning: "抵達與入住", afternoon: "校園導覽", evening: "迎新介紹" },
+      { day: "週一 (Monday)", morning: "分級測驗", afternoon: "聯合廣場與舊金山市區", evening: "校園活動" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "Exploratorium 科學博物館", evening: "自由時間" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "金門大橋單車騎行 & 索薩利托 (Sausalito)", evening: "電影之夜" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "下午工作坊", evening: "校園社交" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "UC Berkeley 校園導覽 & 鐘塔", evening: "安扎湖 (Lake Anza) 游泳與健行" },
+      { day: "週六 (Saturday)", morning: "【全日遊】Great America 遊樂園", afternoon: "體驗雲霄飛車", evening: "自由活動" }
     ],
     transferOptions: [
       { code: "SFO", name: "舊金山國際 (SFO)", price: 400 }
     ]
   },
   {
-    id: 'usa-la',
-    name: "LOS ANGELES 洛杉磯 (California State University)",
-    country: "USA",
-    type: "Film & Beach",
-    location: "美國, 洛杉磯 (California State University)",
-    description: "【好萊塢與海灘】位於加州州立大學海峽群島分校 (CSU Channel Islands)，校園建築優美，充滿西班牙風格。距離洛杉磯市中心與著名的馬里布海灘不遠。行程包含好萊塢星光大道、環球影城以及美麗的 Santa Monica 海灘。",
-    features: ["加州大學校園", "好萊塢星光大道", "環球影城", "Santa Monica 海灘"],
-    pricePerWeek: 3625, // 2026 Estimated
-    currency: "$",
-    startDate: "2026-07-05”,
-    endDate: "2026-07-25”,
-    age: "12-17",
-    // 替換圖片：洛杉磯棕櫚樹
-    image: "https://images.unsplash.com/photo-1580655653885-65763b2597d0?auto=format&fit=crop&w=800&q=80",
-    itinerary: [
-      { day: "Week 1", activity: "【星光熠熠】好萊塢星光大道 / 格里斐斯天文台 / 比佛利山莊 / Santa Monica 海灘" },
-      { day: "Week 2", activity: "【電影夢工廠】洛杉磯環球影城 (Universal Studios) / 蓋提中心 (Getty Center) / 購物中心" }
-    ],
-    transferOptions: [
-      { code: "LAX", name: "洛杉磯國際 (LAX)", price: 750 }
-    ]
-  },
-  {
-    id: 'usa-miami',
-    name: "MIAMI 邁阿密 (Barry University)",
-    country: "USA",
-    type: "Sun & Fun",
-    location: "美國, 邁阿密 (Barry University)",
-    description: "【佛羅里達陽光】位於邁阿密海岸的 Barry University，擁有熱帶風情的校園與游泳池。這裡是享受陽光、沙灘與美式文化的最佳地點。行程包含邁阿密著名的南海灘 (South Beach)、大沼澤地國家公園 (Everglades) 體驗氣墊船。",
-    features: ["佛州陽光海灘", "大沼澤地國家公園", "大學校園設施", "多元文化體驗"],
-    pricePerWeek: 3625, // 2026 Estimated
-    currency: "$",
-    startDate: "2026-07-05”,
-    endDate: "2026-08-08”,
-    age: "12-18”,
-    // 替換圖片：邁阿密
-    image: "https://images.unsplash.com/photo-1535498730771-e735b998cd64?auto=format&fit=crop&w=800&q=80",
-    itinerary: [
-      { day: "Week 1", activity: "【熱帶風情】南海灘 (South Beach) / 邁阿密市區導覽 / 購物中心 / 校園泳池派對" },
-      { day: "Week 2", activity: "【自然與冒險】大沼澤地國家公園氣墊船 / 勞德岱堡 (Fort Lauderdale) 遊船 / 科學博物館" }
-    ],
-    transferOptions: [
-      { code: "MIA", name: "邁阿密國際 (MIA)", price: 500 },
-    ]
-  },
-
-  // --- MALAYSIA CENTRES ---
-  {
     id: 'my-jb',
     name: "JOHOR BAHRU 新山 (Forest City International School)",
     country: "Malaysia",
     type: "Tropical & High CP",
     location: "馬來西亞, 森林城市 (Forest City Intl School)",
-    description: "【高CP值・鄰近新加坡】校區位於 Forest City International School，距離新加坡車程約 1 小時。結合熱帶度假與英語學習。學生入住獨立衛浴雙人房，享受頂級校園設施。行程包含新加坡環球影城、馬來西亞樂高樂園。",
+    description: "【高CP值・鄰近新加坡】校區位於 Forest City International School，距離新加坡車程約 1 小時。結合熱帶度假與英語學習。",
     features: ["雙國遊學(馬來西亞+新加坡)", "樂高樂園與環球影城", "頂級校園設施", "高CP值"],
     pricePerWeek: 775, // 2026 Gross
     currency: "£",
     startDate: "2026-07-05",
-    endDate: "2026-08-09”,
+    endDate: "2026-08-09",
     age: "12-18",
-    // 替換圖片：宏偉校舍/建築 (替代原熱帶圖片，符合英國建築要求)
     image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
+    // 資料來源：Malaysia Summer Centre 2025.pdf
     itinerary: [
-      { day: "Week 1", activity: "【熱帶冒險】海灘尋寶遊戲 / 新加坡濱海灣金沙 / 蠟染藝術 / 馬來西亞樂高樂園" },
-      { day: "Week 2", activity: "【文化雙城】紅樹林生態導覽 / 柔佛古廟 / 新加坡環球影城或市區 / 冰淇淋派對" }
+      { day: "週日 (Sunday)", morning: "抵達與入住", afternoon: "校園導覽", evening: "迎新介紹" },
+      { day: "週一 (Monday)", morning: "分級測驗", afternoon: "海灘尋寶遊戲 (Scavenger Hunt)", evening: "歡迎晚會" },
+      { day: "週二 (Tuesday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】新加坡濱海灣金沙與花園", evening: "藝術與工藝活動" },
+      { day: "週三 (Wednesday)", morning: "英語課程 (3小時)", afternoon: "泳池活動", evening: "桌遊之夜" },
+      { day: "週四 (Thursday)", morning: "英語課程 (3小時)", afternoon: "【半日遊】柔佛古廟與遊船", evening: "體育活動" },
+      { day: "週五 (Friday)", morning: "英語課程 (3小時)", afternoon: "迷你奧運會 或 珠寶製作", evening: "夕陽冰淇淋派對" },
+      { day: "週六 (Saturday)", morning: "【全日遊】新加坡徒步導覽與遊船", afternoon: "探索獅城", evening: "放鬆之夜" }
     ],
     transferOptions: [
       { code: "SIN", name: "新加坡樟宜 (Changi)", price: 180 },
@@ -369,19 +264,19 @@ const TEEN_CAMPUSES = [
   }
 ];
 
-// --- 樂齡遊學資料 (2026 Explore Programme) ---
+// --- 樂齡遊學資料 (根據 2026 手冊精準更新) ---
 const SENIOR_CAMPUSES = [
   {
     id: 'senior-canterbury',
-    name: "CANTERBURY 坎特伯雷 (Explore Canterbury Programme)",
+    name: "CANTERBURY 坎特伯雷 (Explore Canterbury - Spring 2026)",
     country: "UK",
     type: "Explore Canterbury",
     location: "英國, 坎特伯雷 (Stafford House International)",
-    description: "【英式優雅慢活】Explore Canterbury 專案。坎特伯雷不僅是世界遺產城市，更是英國聖公會的發源地，充滿歷史與文學氣息。課程包含每週 20 堂英語課，以及專屬的社交活動與旅遊，如傳統下午茶、大教堂導覽、肯特郡花園漫步等，讓您以舒適的步調品味英國生活。",
-    features: ["熟齡專屬課程", "深度文化體驗", "肯特郡花園之旅", "步調舒適"],
-    pricePerWeek: 730, // 2026 Explore Programme (Course only)
+    description: "【50+ 熟齡專屬：英格蘭花園之旅】坎特伯雷是世界遺產城市，也是英國聖公會發源地。課程結合歷史、文化與美食。您將探索「英格蘭花園」肯特郡的鄉村風光，品嚐當地葡萄園美酒與惠特斯特布爾生蠔，享受優雅慢活的學習時光。",
+    features: ["50+專屬課程", "肯特郡花園之旅", "葡萄園與釀酒廠參訪", "世界遺產巡禮"],
+    pricePerWeek: 730,
     currency: "£",
-    startDate: "2026-03-30", // First start date
+    startDate: "2026-03-30",
     endDate: "2026-05-08",
     age: "50+",
     courseDates: [
@@ -390,32 +285,43 @@ const SENIOR_CAMPUSES = [
       { label: "春季梯次 (2週)", date: "2026/04/27 - 2026/05/08" },
       { label: "春季梯次 (1週)", date: "2026/05/04 - 2026/05/08" }
     ],
-    // 替換圖片：英式花園/寧靜氛圍
     image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
+    // 依據 CanterburySC.jpg
     itinerary: [
-      { day: "Week 1", activity: "【歷史與文學】坎特伯雷大教堂導覽 / 漫步古城牆 / 傳統英式酒吧之夜 / 倫敦一日遊" },
-      { day: "Week 2", activity: "【花園與城堡】西辛赫斯特城堡花園 (Sissinghurst) / 漫步多佛白堊斷崖 / 奶油茶 (Cream Tea) 體驗 / 惜別晚宴" }
+      { day: "週日 (Week 1 Sunday)", morning: "抵達英國", afternoon: "入住寄宿家庭或宿舍", evening: "自由休息" },
+      { day: "週一 (Week 1 Monday)", morning: "英語課程", afternoon: "城市歷史徒步導覽", evening: "歡迎酒會 (Welcome Drinks)" },
+      { day: "週二 (Week 1 Tuesday)", morning: "英語課程", afternoon: "坎特伯雷大教堂深度導覽", evening: "自由活動" },
+      { day: "週三 (Week 1 Wednesday)", morning: "英語課程", afternoon: "拜訪當地葡萄園 (Local Vineyard)", evening: "晚餐聚會 (選購)" },
+      { day: "週四 (Week 1 Thursday)", morning: "英語課程", afternoon: "Tiny Tim's 傳統英式奶油茶", evening: "坎特伯雷幽靈之旅" },
+      { day: "週五 (Week 1 Friday)", morning: "英語課程", afternoon: "護城河遊船與河畔散步", evening: "自由活動" },
+      { day: "週六 (Week 1 Saturday)", morning: "【全日遊】多佛城堡 (Dover Castle)", afternoon: "多佛白堊斷崖健行", evening: "自由活動" },
+      { day: "週日 (Week 2 Sunday)", morning: "【選購行程】倫敦與皇家公園", afternoon: "自由探索倫敦", evening: "自由活動" },
+      { day: "週一 (Week 2 Monday)", morning: "英語課程", afternoon: "Margate 濱海小鎮與 Turner 美術館", evening: "Corkk 英格蘭酒莊品酒" },
+      { day: "週二 (Week 2 Tuesday)", morning: "英語課程", afternoon: "Whitstable 小鎮漫步與生蠔品嚐", evening: "自由活動" },
+      { day: "週三 (Week 2 Wednesday)", morning: "英語課程", afternoon: "參訪里茲城堡 (Leeds Castle)", evening: "晚餐聚會 (選購)" },
+      { day: "週四 (Week 2 Thursday)", morning: "英語課程", afternoon: "參訪 Shepherd Neame (英國最古老釀酒廠)", evening: "電影之夜" },
+      { day: "週五 (Week 2 Friday)", morning: "英語課程", afternoon: "肯特郡鄉村酒吧午餐與健行", evening: "自由活動" },
+      { day: "週六 (Week 2 Saturday)", morning: "收拾行李", afternoon: "前往機場", evening: "返家" }
     ],
     accommodationOptions: [
-      { name: "Homestay (Standard, Single, Half Board)", price: 205 }, // +205 per week
-      { name: "Homestay (Private Bath, Single, HB)", price: 285 },
-      { name: "Residence (Single En-suite, Self-catered)", price: 310 } // 範例
+      { name: "Homestay (Shared Bath, Single, HB)", price: 240 },
+      { name: "Residence (Single En-suite, Self-catered)", price: 240 }
     ],
     transferOptions: [
-      { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 360 },
-      { code: "STN", name: "倫敦史坦斯特 (Stansted)", price: 280 },
-      { code: "BHX", name: "伯明罕 (Birmingham)", price: 240 }
+      { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 500 },
+      { code: "LGW", name: "倫敦蓋威克 (Gatwick)", price: 400 },
+      { code: "STN", name: "倫敦史坦斯特 (Stansted)", price: 500 }
     ]
   },
   {
     id: 'senior-london',
-    name: "LONDON 倫敦 (Explore London Programme)",
+    name: "LONDON 倫敦 (Explore London - Christmas 2026)",
     country: "UK",
     type: "Explore London",
     location: "英國, 倫敦 (Holborn)",
-    description: "【大都會文化巡禮】Explore London 專案位於倫敦市中心 Holborn。課程結合英語學習與倫敦豐富的藝文資源。上午學習實用英語，下午則有專人帶領造訪國家美術館、泰特現代美術館，或在泰晤士河畔享受午後時光。適合熱愛藝術、歷史與城市探索的熟齡學員。",
-    features: ["倫敦市中心校區", "博物館深度遊", "西區劇院欣賞", "國際社交圈"],
-    pricePerWeek: 730, // 2026 Explore Programme (Course only)
+    description: "【50+ 熟齡專屬：倫敦聖誕特別企劃】感受倫敦最魔幻的季節！課程期間恰逢聖誕節慶，街道閃爍著燈光，空氣中飄著烤栗子香氣。行程包含探索聖誕市集、欣賞西區劇院表演、造訪皇家阿爾伯特音樂廳，讓您體驗最道地的英式聖誕。",
+    features: ["50+專屬課程", "聖誕市集巡禮", "西區劇院與音樂廳", "節慶燈光巴士"],
+    pricePerWeek: 730,
     currency: "£",
     startDate: "2026-11-30",
     endDate: "2026-12-11",
@@ -424,21 +330,33 @@ const SENIOR_CAMPUSES = [
       { label: "冬季梯次 (2週)", date: "2026/11/30 - 2026/12/11" },
       { label: "冬季梯次 (1週)", date: "2026/12/07 - 2026/12/11" }
     ],
-    // 替換圖片：博物館/藝術風格
-    image: "https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1512389142860-9c449e58a543?auto=format&fit=crop&w=800&q=80",
+    // 依據 LondonSC.jpg
     itinerary: [
-      { day: "Week 1", activity: "【皇室與藝術】白金漢宮 / 國家美術館導覽 / 泰晤士河遊船 / 柯芬園與西區劇院" },
-      { day: "Week 2", activity: "【歷史與現代】大英博物館深度遊 / 碎片塔 (The Shard) 觀景 / 波羅市集美食 / 格林威治天文台" }
+      { day: "週日 (Week 1 Sunday)", morning: "抵達英國", afternoon: "入住寄宿家庭或宿舍", evening: "自由休息" },
+      { day: "週一 (Week 1 Monday)", morning: "英語課程", afternoon: "柯芬園 & Seven Dials 徒步導覽", evening: "歡迎酒會 (Welcome Drinks)" },
+      { day: "週二 (Week 1 Tuesday)", morning: "英語課程", afternoon: "皇家阿爾伯特音樂廳導覽 (Royal Albert Hall)", evening: "自由活動" },
+      { day: "週三 (Week 1 Wednesday)", morning: "英語課程", afternoon: "皇家交易所 Fortnum's 午餐", evening: "劇院欣賞 (選購)" },
+      { day: "週四 (Week 1 Thursday)", morning: "英語課程", afternoon: "泰晤士河南岸 (South Bank) 漫步", evening: "倫敦聖誕燈光觀光巴士" },
+      { day: "週五 (Week 1 Friday)", morning: "英語課程", afternoon: "參訪約翰·索恩爵士博物館", evening: "自由活動" },
+      { day: "週六 (Week 1 Saturday)", morning: "【全日遊】溫徹斯特 (Winchester)", afternoon: "溫徹斯特聖誕市集採購", evening: "自由活動" },
+      { day: "週日 (Week 2 Sunday)", morning: "【選購行程】聖誕童話劇 (Pantomime)", afternoon: "日場演出欣賞", evening: "自由活動" },
+      { day: "週一 (Week 2 Monday)", morning: "英語課程", afternoon: "Carnaby Street 與 Soho 區徒步導覽", evening: "傳統英式酒吧社交 (Pub Social)" },
+      { day: "週二 (Week 2 Tuesday)", morning: "英語課程", afternoon: "V&A 博物館參訪與午餐", evening: "自由活動" },
+      { day: "週三 (Week 2 Wednesday)", morning: "英語課程", afternoon: "騎士橋 (Knightsbridge) 聖誕購物", evening: "劇院欣賞" },
+      { day: "週四 (Week 2 Thursday)", morning: "英語課程", afternoon: "Browns 英式下午茶體驗", evening: "自由活動" },
+      { day: "週五 (Week 2 Friday)", morning: "英語課程", afternoon: "聖誕午餐聚會", evening: "英式酒吧劇場 (Pub Theatre)" },
+      { day: "週六 (Week 2 Saturday)", morning: "收拾行李", afternoon: "前往機場", evening: "返家" }
     ],
     accommodationOptions: [
-      { name: "Homestay (Single, Breakfast only)", price: 220 },
+      { name: "Homestay (Single, Breakfast only)", price: 250 },
       { name: "Homestay (Single, Half Board)", price: 270 },
-      { name: "Residence (Piccadilly Court, Single En-suite)", price: 470 }
+      { name: "Residence (Standard , Single En-suite)", price: 380 }
     ],
     transferOptions: [
-      { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 360 },
-      { code: "STN", name: "倫敦史坦斯特 (Stansted)", price: 280 },
-      { code: "BHX", name: "伯明罕 (Birmingham)", price: 240 }
+      { code: "LHR", name: "倫敦希斯洛 (Heathrow)", price: 340 },
+      { code: "LGW", name: "倫敦蓋威克 (Gatwick)", price: 380 },
+      { code: "STN", name: "倫敦史坦斯特 (Stansted)", price: 380 }
     ]
   }
 ];
@@ -506,29 +424,38 @@ const DetailModal = ({ campus, onClose }) => {
   const [weeks, setWeeks] = useState(2);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedTransfer, setSelectedTransfer] = useState(null);
-  const [selectedAccom, setSelectedAccom] = useState(null); // 新增：住宿選擇狀態
+  const [selectedAccom, setSelectedAccom] = useState(null);
+
+  // 當開啟不同校區時，重置選項與週數
+  useEffect(() => {
+    setWeeks(2);
+    setSelectedTransfer(null);
+    setSelectedAccom(null);
+    setActiveTab('overview');
+  }, [campus]);
 
   if (!campus) return null;
 
+  // --- 關鍵修改：直接在 Render 中計算總金額，不使用 useEffect，確保 0 延遲 ---
   const tuitionTotal = weeks * campus.pricePerWeek;
-  // 住宿費 = 週數 * 單週住宿費 (如果有選的話)
   const accomTotal = selectedAccom ? weeks * selectedAccom.price : 0;
   const transferPrice = selectedTransfer ? selectedTransfer.price : 0;
   const grandTotal = tuitionTotal + accomTotal + transferPrice;
+  // ------------------------------------------------------------
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row relative animate-scale-in">
         
-        {/* 關閉按鈕 */}
+        {/* === 固定懸浮關閉按鈕 === */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 bg-white/80 rounded-full hover:bg-stone-100 transition-colors"
+          className="absolute top-4 right-4 z-[60] p-2 bg-stone-800 text-white rounded-full hover:bg-stone-700 transition-colors shadow-lg hover:rotate-90 duration-300"
+          aria-label="Close modal"
         >
-          <X size={20} className="text-stone-600"/>
+          <X size={24} />
         </button>
 
-        {/* 左側：圖片與基本資訊 */}
         <div className="w-full md:w-2/5 relative h-48 md:h-auto group">
           <img 
             src={campus.image} 
@@ -543,10 +470,8 @@ const DetailModal = ({ campus, onClose }) => {
           </div>
         </div>
 
-        {/* 右側：內容區 */}
         <div className="w-full md:w-3/5 flex flex-col max-h-[60vh] md:max-h-full overflow-y-auto bg-stone-50">
           
-          {/* Tabs */}
           <div className="flex bg-white border-b border-orange-100 sticky top-0 z-10 shadow-sm">
             {['overview', 'itinerary', 'calculator'].map((tab) => (
               <button
@@ -566,7 +491,6 @@ const DetailModal = ({ campus, onClose }) => {
           </div>
 
           <div className="p-6 flex-1 overflow-y-auto">
-            {/* 內容切換 */}
             {activeTab === 'overview' && (
               <div className="space-y-4">
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-orange-100">
@@ -610,9 +534,9 @@ const DetailModal = ({ campus, onClose }) => {
               </div>
             )}
 
+            {/* === 修正重點：全新的行程顯示方式 (早/午/晚) === */}
             {activeTab === 'itinerary' && (
-              <div className="space-y-4">
-                 {/* 樂齡遊學專屬：開課梯次顯示 */}
+              <div className="space-y-6">
                  {campus.courseDates && (
                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 mb-4">
                       <h4 className="text-sm font-bold text-purple-800 mb-2 flex items-center gap-2">
@@ -631,25 +555,48 @@ const DetailModal = ({ campus, onClose }) => {
                  <div className="bg-orange-50 p-3 rounded-lg text-xs text-orange-800 mb-2 flex items-start gap-2 border border-orange-100">
                     <CheckCircle size={14} className="mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong>行程說明：</strong><br/>
-                      此為精選範例行程。每週會安排 1 次全日旅行與數次半日旅行，實際安排將依學校當週公告為準。
-                      {campus.age === "50+" && <br/>}
-                      {campus.age === "50+" && <span>(樂齡方案包含：每週20堂課、7項活動、教材、活動交通、2週課程含1次全日旅遊)</span>}
+                      <strong>行程說明：</strong>以下為經典範例行程，實際安排將依學校當週公告與天氣狀況調整。
                     </div>
                   </div>
                
                 {campus.itinerary.map((item, idx) => (
-                  <div key={idx} className="mb-4">
-                     <div className="flex items-center gap-2 text-stone-500 text-xs font-bold uppercase tracking-wider mb-2">
-                        <span className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-orange-500' : 'bg-green-500'}`}></span>
-                        {item.day}
-                        <span className="flex-1 h-px bg-stone-200"></span>
-                      </div>
-                    <div className="bg-white p-4 rounded-lg border border-stone-100 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="text-stone-700 text-sm leading-relaxed">
-                        {item.activity}
-                      </div>
-                    </div>
+                  <div key={idx} className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm">
+                     <div className="bg-stone-100 px-4 py-3 border-b border-stone-200 flex items-center gap-2">
+                        <span className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-orange-500' : 'bg-green-500'}`}></span>
+                        <h4 className="font-bold text-stone-800">{item.day}</h4>
+                     </div>
+                     <div className="p-4 space-y-4">
+                        {/* 早上 */}
+                        <div className="flex gap-3 items-start">
+                           <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg flex-shrink-0 mt-1">
+                             <Sunrise size={18} />
+                           </div>
+                           <div>
+                             <span className="text-xs font-bold text-stone-400 uppercase">Morning (上午)</span>
+                             <p className="text-stone-700 text-sm">{item.morning}</p>
+                           </div>
+                        </div>
+                        {/* 下午 */}
+                        <div className="flex gap-3 items-start border-t border-dashed border-stone-100 pt-3">
+                           <div className="p-2 bg-orange-50 text-orange-600 rounded-lg flex-shrink-0 mt-1">
+                             <Sun size={18} />
+                           </div>
+                           <div>
+                             <span className="text-xs font-bold text-stone-400 uppercase">Afternoon (下午)</span>
+                             <p className="text-stone-700 text-sm">{item.afternoon}</p>
+                           </div>
+                        </div>
+                        {/* 晚上 */}
+                        <div className="flex gap-3 items-start border-t border-dashed border-stone-100 pt-3">
+                           <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg flex-shrink-0 mt-1">
+                             <Moon size={18} />
+                           </div>
+                           <div>
+                             <span className="text-xs font-bold text-stone-400 uppercase">Evening (晚上)</span>
+                             <p className="text-stone-700 text-sm">{item.evening}</p>
+                           </div>
+                        </div>
+                     </div>
                   </div>
                 ))}
               </div>
@@ -660,32 +607,31 @@ const DetailModal = ({ campus, onClose }) => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-stone-100 text-center">
                   <h3 className="text-lg font-bold text-stone-800 mb-6">預估您的遊學費用 (個人報名)</h3>
                   
-                  {/* 週數選擇器 */}
-                  <div className="mb-6">
+                  {/* 週數選擇器 (按下去總金額會即時變動) */}
+                  <div className="mb-6 select-none">
                     <label className="block text-sm font-medium text-stone-500 mb-2">
                       選擇參加週數
                     </label>
                     <div className="flex items-center justify-center gap-4">
                       <button 
                         onClick={() => setWeeks(Math.max(1, weeks - 1))}
-                        className="w-10 h-10 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 flex items-center justify-center text-xl font-bold transition-colors"
+                        className="w-12 h-12 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 active:bg-stone-300 flex items-center justify-center text-2xl font-bold transition-all"
                       >
                         -
                       </button>
                       <div className="text-center w-24">
-                        <span className="text-3xl font-bold text-stone-800">{weeks}</span>
-                        <span className="text-sm text-stone-500 block">週 ({weeks * 7} 天)</span>
+                        <span className="text-4xl font-bold text-stone-800 block">{weeks}</span>
+                        <span className="text-xs text-stone-500 block">週 ({weeks * 7} 天)</span>
                       </div>
                       <button 
                         onClick={() => setWeeks(Math.min(8, weeks + 1))}
-                        className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 flex items-center justify-center text-xl font-bold transition-colors"
+                        className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 active:bg-orange-300 flex items-center justify-center text-2xl font-bold transition-all"
                       >
                         +
                       </button>
                     </div>
                   </div>
 
-                  {/* 住宿選擇區 (僅針對樂齡校區或有提供不同住宿的校區) */}
                   {campus.accommodationOptions && (
                     <div className="bg-stone-50 p-4 rounded-lg border border-stone-200 text-left mb-6">
                       <h4 className="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2">
@@ -717,7 +663,6 @@ const DetailModal = ({ campus, onClose }) => {
                     </div>
                   )}
 
-                  {/* 機場接送選擇區 */}
                   <div className="bg-stone-50 p-4 rounded-lg border border-stone-200 text-left mb-6">
                     <h4 className="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2">
                        <Plane size={16} className="text-orange-500"/> 機場來回接送 (選購)
@@ -751,7 +696,6 @@ const DetailModal = ({ campus, onClose }) => {
                     </div>
                   </div>
 
-                  {/* 費用加總明細 */}
                   <div className="border-t border-dashed border-stone-200 py-6 space-y-2">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-stone-500">學費 (個人價 x {weeks} 週)</span>
@@ -770,8 +714,9 @@ const DetailModal = ({ campus, onClose }) => {
                       </div>
                     )}
                    
-                    <div className="flex justify-between items-center text-2xl font-bold text-orange-600 mt-4 pt-4 border-t border-stone-100">
-                      <span>總金額</span>
+                    {/* === 總金額顯示區塊：放大並確保即時更新 === */}
+                    <div className="flex justify-between items-center text-3xl font-bold text-orange-600 mt-4 pt-4 border-t border-stone-100 bg-orange-50 p-6 rounded-xl shadow-inner">
+                      <span className="text-lg text-stone-500 font-normal self-end mb-1">總金額</span>
                       <span>{campus.currency}{grandTotal.toLocaleString()}</span>
                     </div>
                     <p className="text-xs text-stone-400 mt-2 text-right">
@@ -781,8 +726,9 @@ const DetailModal = ({ campus, onClose }) => {
                   
                   <button 
                     onClick={() => window.open("https://lin.ee/KNXjszz", "_blank")}
-                    className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 active:scale-95"
+                    className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition-all shadow-lg shadow-orange-200 active:scale-95 flex items-center justify-center gap-2"
                   >
+                    <MessageCircle size={20} />
                     預約諮詢此方案
                   </button>
                 </div>
